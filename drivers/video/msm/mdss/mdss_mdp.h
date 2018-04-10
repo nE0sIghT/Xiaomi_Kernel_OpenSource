@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -22,6 +23,7 @@
 #include <linux/notifier.h>
 #include <linux/irqreturn.h>
 #include <linux/kref.h>
+#include <linux/kthread.h>
 
 #include "mdss.h"
 #include "mdss_mdp_hwio.h"
@@ -819,7 +821,6 @@ struct mdss_overlay_private {
 
 	struct sw_sync_timeline *vsync_timeline;
 	struct mdss_mdp_vsync_handler vsync_retire_handler;
-	struct work_struct retire_work;
 	int retire_cnt;
 	bool kickoff_released;
 	u32 cursor_ndx[2];
@@ -831,6 +832,10 @@ struct mdss_overlay_private {
 	bool allow_kickoff;
 
 	u8 sd_transition_state;
+
+	struct kthread_worker worker;
+	struct kthread_work retire_work;
+	struct task_struct *thread;
 };
 
 struct mdss_mdp_set_ot_params {

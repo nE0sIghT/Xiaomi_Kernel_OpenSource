@@ -1,4 +1,5 @@
 /* Copyright (c) 2012-2016, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1936,22 +1937,20 @@ validate_exit:
 	mutex_lock(&mdp5_data->list_lock);
 	list_for_each_entry_safe(pipe, tmp, &mdp5_data->pipes_used, list) {
 		if (IS_ERR_VALUE(ret)) {
-			if ((pipe->ndx & rec_release_ndx[0]) ||
-			    (pipe->ndx & rec_release_ndx[1])) {
+			if (((pipe->ndx & rec_release_ndx[0]) &&
+					(pipe->multirect.num == 0)) ||
+					((pipe->ndx & rec_release_ndx[1]) &&
+					(pipe->multirect.num == 1))) {
 				mdss_mdp_smp_unreserve(pipe);
 				pipe->params_changed = 0;
 				pipe->dirty = true;
 				if (!list_empty(&pipe->list))
 					list_del_init(&pipe->list);
 				mdss_mdp_pipe_destroy(pipe);
-			} else if ((pipe->ndx & rec_destroy_ndx[0]) ||
-				   (pipe->ndx & rec_destroy_ndx[1])) {
-				/*
-				 * cleanup/destroy list pipes should move back
-				 * to destroy list. Next/current kickoff cycle
-				 * will release the pipe because validate also
-				 * acquires ov_lock.
-				 */
+			} else if (((pipe->ndx & rec_destroy_ndx[0]) &&
+					(pipe->multirect.num == 0)) ||
+					((pipe->ndx & rec_destroy_ndx[1]) &&
+					(pipe->multirect.num == 1))) {
 				list_move(&pipe->list,
 					&mdp5_data->pipes_destroy);
 			}
